@@ -1,0 +1,181 @@
+/*
+ Copyright 2025 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
+
+/**
+ * A message from the client describing its capabilities, such as the component
+ * catalog it supports. Exactly ONE of the properties in this object must be
+ * set.
+ */
+
+export type ClientCapabilitiesUri = string;
+export type ClientCapabilitiesDynamic = {
+  components: { [key: string]: unknown };
+  styles: { [key: string]: unknown };
+  metadata?: {
+    protocolVersion?: string;
+    catalogVersion?: string;
+    [k: string]: unknown;
+  };
+};
+
+export type ClientCapabilities =
+  | { catalogUri: ClientCapabilitiesUri }
+  | { dynamicCatalog: ClientCapabilitiesDynamic };
+
+/**
+ * A message sent from the client to the server. Exactly ONE of the properties
+ * in this object must be set.
+ */
+export interface ClientToServerMessage {
+  userAction?: UserAction;
+  clientUiCapabilities?: ClientCapabilities;
+  error?: ClientError;
+  /** Demo content */
+  request?: unknown;
+}
+
+export interface UserActionSource {
+  componentId: string;
+  interaction?: string;
+  [k: string]: unknown;
+}
+
+export interface UserActionSurface {
+  id: string;
+  [k: string]: unknown;
+}
+
+export interface NormalizedUserActionPayload {
+  /**
+   * The name of the action.
+   */
+  name: string;
+  /**
+   * A JSON object containing the key-value pairs from the component's
+   * `action.context`, after resolving all data bindings.
+   */
+  context?: {
+    [k: string]: unknown;
+  };
+  /**
+   * The source metadata for the triggering UI interaction.
+   */
+  source: UserActionSource;
+  /**
+   * The destination UI surface metadata.
+   */
+  surface: UserActionSurface;
+  /**
+   * An ISO timestamp of when the event occurred.
+   */
+  timestamp: string;
+}
+
+export interface LegacyUserActionPayloadShape {
+  /**
+   * The ID of the surface.
+   */
+  surfaceId: string;
+  /**
+   * The ID of the component that triggered the event.
+   */
+  sourceComponentId: string;
+}
+
+/**
+ * Represents a user-initiated action, sent from the client to the server.
+ */
+export type UserAction =
+  | NormalizedUserActionPayload
+  | (Omit<NormalizedUserActionPayload, "source" | "surface"> &
+      LegacyUserActionPayloadShape & {
+        source?: UserActionSource;
+        surface?: UserActionSurface;
+      });
+
+/**
+ * Normalizes legacy and current userAction payloads into the standard
+ * name/context/source/surface/timestamp shape.
+ */
+export function normalizeUserActionPayload(
+  action: UserAction
+): NormalizedUserActionPayload {
+  const sourceComponentId =
+    action.source?.componentId ??
+    ("sourceComponentId" in action ? action.sourceComponentId : undefined);
+  if (!sourceComponentId) {
+    throw new Error(
+      "Invalid userAction payload: expected source.componentId or sourceComponentId."
+    );
+  }
+
+  const surfaceId =
+    action.surface?.id ??
+    ("surfaceId" in action ? action.surfaceId : undefined);
+  if (!surfaceId) {
+    throw new Error(
+      "Invalid userAction payload: expected surface.id or surfaceId."
+    );
+  }
+
+  return {
+    name: action.name,
+    context: action.context,
+    source: {
+      ...(action.source ?? {}),
+      componentId: sourceComponentId,
+    },
+    surface: {
+      ...(action.surface ?? {}),
+      id: surfaceId,
+    },
+    timestamp: action.timestamp,
+  };
+}
+
+export interface LegacyUserActionPayload {
+  /**
+   * The name of the action.
+   */
+  name: string;
+  /**
+   * The ID of the surface.
+   */
+  surfaceId: string;
+  /**
+   * The ID of the component that triggered the event.
+   */
+  sourceComponentId: string;
+  /**
+   * An ISO timestamp of when the event occurred.
+   */
+  timestamp: string;
+  /**
+   * A JSON object containing the key-value pairs from the component's
+   * `action.context`, after resolving all data bindings.
+   */
+  context?: {
+    [k: string]: unknown;
+  };
+}
+
+/**
+ * A message from the client indicating an error occurred, for example,
+ * during UI rendering.
+ */
+export interface ClientError {
+  [k: string]: unknown;
+}
