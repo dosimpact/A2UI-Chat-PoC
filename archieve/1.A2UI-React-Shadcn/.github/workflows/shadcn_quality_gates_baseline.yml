@@ -1,0 +1,116 @@
+name: Shadcn Quality Gates Baseline
+
+on:
+  pull_request:
+    paths:
+      - "renderers/react/**"
+      - ".github/workflows/shadcn_quality_gates_baseline.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "renderers/react/**"
+      - ".github/workflows/shadcn_quality_gates_baseline.yml"
+  workflow_dispatch:
+    inputs:
+      enable_visual_gate:
+        description: "Enable visual regression placeholder gate"
+        required: false
+        default: false
+        type: boolean
+      enable_a11y_gate:
+        description: "Enable accessibility placeholder gate"
+        required: false
+        default: false
+        type: boolean
+      enable_perf_gate:
+        description: "Enable performance placeholder gate"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: shadcn-quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-matrix:
+    name: "Required Matrix / Node ${{ matrix.node }} / ${{ matrix.check }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20]
+        check: [test, lint, typecheck, build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: renderers/react/package-lock.json
+
+      - name: Install dependencies
+        working-directory: renderers/react
+        run: npm ci
+
+      - name: Verify required script exists (non-passive required gate)
+        working-directory: renderers/react
+        env:
+          CHECK: ${{ matrix.check }}
+        run: |
+          node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); const script=process.env.CHECK; if(!pkg.scripts || !pkg.scripts[script]) { console.error('::error title=TODO required gate missing::Add npm script `' + script + '` to renderers/react/package.json before this required check can pass.'); process.exit(1); }"
+
+      - name: Run required check
+        working-directory: renderers/react
+        run: npm run ${{ matrix.check }}
+
+      - name: TODO - Expand matrix coverage
+        run: |
+          echo "::notice title=TODO::Extend matrix to additional targets (for example renderers/react/visual-parity) once baseline gates are stable."
+
+  visual-gate-placeholder:
+    name: "Optional Visual Gate Placeholder"
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_visual_gate == true }}
+    needs: [test-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: TODO - implement visual regression gate (intentional fail)
+        run: |
+          echo "::error title=TODO visual gate::Implement visual regression command (for example Playwright screenshot diff) before enabling this gate in required checks."
+          exit 1
+
+  a11y-gate-placeholder:
+    name: "Optional Accessibility Gate Placeholder"
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_a11y_gate == true }}
+    needs: [test-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: TODO - implement accessibility gate (intentional fail)
+        run: |
+          echo "::error title=TODO a11y gate::Implement automated accessibility checks (for example axe/playwright) before enabling this gate in required checks."
+          exit 1
+
+  perf-gate-placeholder:
+    name: "Optional Performance Gate Placeholder"
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_perf_gate == true }}
+    needs: [test-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: TODO - implement performance gate (intentional fail)
+        run: |
+          echo "::error title=TODO perf gate::Implement performance budget checks (for example Lighthouse bundle/time budgets) before enabling this gate in required checks."
+          exit 1

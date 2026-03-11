@@ -1,0 +1,10 @@
+{
+  "name": "a2ui-chat-poc-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.6.4",
+  "scripts": {
+    "test:e2e:react": "pnpm --filter react-e2e-consumer test:e2e",
+    "test:e2e:next": "pnpm --filter nextjs-e2e-consumer test:e2e"
+  }
+}

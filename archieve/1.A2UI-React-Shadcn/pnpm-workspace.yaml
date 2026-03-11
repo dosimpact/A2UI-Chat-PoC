@@ -1,0 +1,8 @@
+packages:
+  - 'renderers/*'
+  - 'renderers/react/visual-parity'
+  - 'tools/*'
+  - 'samples/client/react/shell'
+  - 'specification/**/eval'
+  - 'specification/**/test'
+  - 'workspaces/*'
